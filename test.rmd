@@ -1,1 +1,506 @@
 ## Testing Something
+---
+title: "Predicting Total Points for NHL Skaters Using Multiple Regression"
+author: "Jadon Hsu and Josh Winnes"
+date: "2024-04-011"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    highlight: espresso
+    theme: readable
+    code_folding: "show"
+  pdf_document:
+    fig_width: 6.5
+    highlight: "espresso"
+    df_print: "tibble"
+editor_options:
+  chunk_output_type: console
+---
+
+# Abstract
+
+The goal of this project is to build a multiple regression model using data from the 2022-2023 NHL season to predict how many points skaters should have given their individual statistics. We split the skaters into three categories: forwards ($f$), defensemen ($d$), and forwards on the powerplay ($pp$). Our models have the following adjusted $R^2$ values: $R^2_f = 0.9585$, $R^2_d = 0.925$, and $R^2_{pp} = 0.9179$. To check the effectiveness of our models, we find the correlation between predicted 2024 point totals and actual 2024 point totals for each category using current data from the 2023-2024 season. We find that $r_f = 0.9750649$, $r_d = 0.9518646$, and $r_{pp} = 0.9415112$ which is strong evidence to suggest that our models are accurately predicting point totals for NHL skaters using current individual statistics.
+
+# Introduction
+
+The question initially asked is what factors cause a given National Hockey League skater to produce points. In the National Hockey League (NHL), there are two groups of players: skaters and goalies. For our purposes, we only examine skaters as they are the players most likely to produce points owing to the fact only 17 goals have been scored by a goalie in NHL history and the points produced by goalies are usually minimal. A point is either the goal scored, the primary assist (meaning that the player was the last player on the scoring team to posses the puck before the goal-scorer) and the secondary assist (the player on the goal-scoring team to possess the puck before the primary assistant). Each goal has an opportunity of having up to three points awarded to that team, as is most often the case, but can also have two or one points awarded depending on the situation. A player's ice time is limited by shifts, the number of times the player is on the ice for an extended period of time. Hockey is a fast paced game with changes on the fly, thus the amoutn of shifts is difrectly correlated to ice time. Obviously, producing a point greatly benefits the chance of victory and has a large impact on the winning percentage of a team. Because of the nature of hockey, specifically the faster action and long puck possessions on potential scoring opportunities, we decided to use points as the dependent variable of choice as opposed to goals as points are much more common. We find our data from Moneypuck.com, and looked specifically at their data from the 2022-2023 NHL season to run our regression models and the 2023-2024 data for our correlation to compare our model across seasons.
+
+
+# Exploratory Data Analysis
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(plotly)
+library(tidyverse)
+library(openintro)
+```
+
+
+```{r, include=FALSE}
+hockey2023 <- read_csv("skaters.csv")
+```
+
+
+
+```{r, include=FALSE}
+all_skaters <- hockey2023 %>% filter(situation == "all")
+all_skaters$I_F_points_per_game <- all_skaters$I_F_points / all_skaters$games_played
+d_men <- all_skaters %>% filter(position == "D")
+forwards <- all_skaters %>% filter(position != "D")
+```
+
+We initially decide to use the individual points statistic for our dependent variable. After this, we divide the raw data to look at every time a given player is on the ice, regardless of the situation. After this, we split into three distinct datasets: one for forwards, one for defensemen, and one for forwards on the powerplay. This occurs when a penalty on the other team has been called and the team has a man advantage, causing an increase in the likelihood of points being scored.Forwards typically have a much higher point output than defensemen. We then create box plots of each dataset to gauge the average point output by each group as well as look for outliers. For the forwards on the powerplay, we look at shifts instead of points as the amount of times a give player is on the powerplay is the limiting factor.
+
+```{r, echo=FALSE}
+powerplay <- hockey2023 %>% filter(situation == "5on4")
+forwardspp <- powerplay %>% filter(position != "D")
+box_defense <- plot_ly(
+  x = ~rep("Points", nrow(d_men)),
+  y = ~d_men$I_F_points,
+  type = "box",
+  hoverinfo = "text",
+  text = ~paste("Name: ", d_men$name, "<br>Points: ", d_men$I_F_points),
+  marker = list(color = "rgb(7,40,89)"),
+  name = "Defensemen"
+) %>%
+  layout(
+    yaxis = list(title = "Points"),
+    xaxis = list(title = "Position")
+  )
+
+# Boxplot for Forwards
+box_forwards <- plot_ly(
+  x = ~rep("Points", nrow(forwards)),
+  y = ~forwards$I_F_points,
+  type = "box",
+  hoverinfo = "text",
+  text = ~paste("Name: ", forwards$name, "<br>Points: ", forwards$I_F_points),
+  marker = list(color = "rgb(7,40,89)"),
+  name = "Forwards"
+) %>%
+  layout(
+    yaxis = list(title = "Points"),
+    xaxis = list(title = "Position")
+  )
+
+# Boxplot for Forwards on Powerplay
+box_forwards_pp <- plot_ly(
+  x = ~rep("Shifts", nrow(forwardspp)),
+  y = ~forwardspp$shifts,
+  type = "box",
+  hoverinfo = "text",
+  text = ~paste("Name: ", forwardspp$name, "<br>Shifts: ", forwardspp$shifts),
+  marker = list(color = "rgb(7,40,89)"),
+  name = "Forwards on the Powerplay"
+) %>%
+  layout(
+    yaxis = list(title = "Shifts"),
+    xaxis = list(title = "Position")
+  )
+
+# Combine plots
+subplot(box_defense, box_forwards, box_forwards_pp, nrows = 3) %>%
+  layout(
+    title = "Boxplots of Points and Shifts to Examine Outliers"
+  )
+```
+
+Unsurprisingly, the best players in the league are the outliers in both position groups. Forwards such as Connor McDavid, Nathan MacKinnon, and David Pastranak all are well above highest whisker because of their superstar nature. They are freak athletes who perform well above the "average" NHL skater. Similarly, defensemen such as Erik Karlsson, Cale Makar, and Roman Josi all outperform the "average" defensemen, being well above the top whisker. There were also approximately 100 in each positional category filtered out for too few games played.
+
+```{r, echo=FALSE}
+
+```
+
+We then filter the data to include all players within the whiskers of the plot and exclude these superstar outliers, as well as impose an arbitrary minimum of games played (60) so the statistics would be more wholistically representative of a season and players who averaged almost 3 points per game for two games would not be included. A total of 8 superstar outliers in the forwards group and 9 defensemen are filtered out.
+
+```{r, include=FALSE}
+d_men %>% filter(I_F_points < 59 & games_played >= 60)
+forwards %>% filter(I_F_points <= 95 & games_played >= 60)
+
+
+```
+
+```{r, include=FALSE}
+```
+
+```{r, echo=FALSE}
+
+```
+
+We decided to filter the shifts to be less than 125 to gain a representative sample of the data, similar to why we excluded less than 60 games. The shifts were the determining factor and not the games played.
+There were no large outliers for the shifts dataset, and there are approximately 200 forwards on the power play filtered out for too few shifts to be of significance. .
+
+```{r, include =FALSE}
+forwardspp %>% filter(shifts <= 125)
+```
+
+
+# Statistical Analysis
+
+The dataset keeps track of 154 individual statistics, most of which have no effect on the number of points a player scores (i.e. name, hits, shots blocked, etc). So our first step for each category is to hand pick the statistics that we felt would actually contribute to a player's point total.
+
+## Forwards
+
+### Multiple Regression
+
+For forwards, we decide to look at variables which contributed to a heavy number of shots on goal, offensive zone possession, and ice time. The variables we select for forwards are shown in the code below.
+
+```{r}
+f_reg_all <- lm(I_F_points ~ I_F_shotsOnGoal +
+              I_F_missedShots +
+              I_F_blockedShotAttempts +
+              I_F_rebounds +
+              I_F_freeze +
+              I_F_playStopped +
+              I_F_playContinuedInZone +
+              I_F_savedShotsOnGoal +
+              I_F_savedUnblockedShotAttempts +
+              I_F_penalityMinutes +
+              I_F_faceOffsWon +
+              I_F_giveaways +
+              I_F_takeaways +
+              I_F_oZoneShiftStarts +
+              I_F_neutralZoneShiftStarts +
+              penaltiesDrawn +
+              timeOnBench,
+            data = forwards
+              )
+```
+
+After hand selecting statistics that we think would contribute to a forward's point total, we run a multiple regression and use backward elimination on non-significant variables and rerun the model until all the variables left were considered significant at the $\alpha = 0.05$ level.
+
+```{r, include=FALSE}
+f_reg <- lm(I_F_points ~ I_F_shotsOnGoal +
+              #I_F_missedShots +
+              I_F_blockedShotAttempts +
+              #I_F_rebounds +
+              I_F_freeze +
+              # I_F_playStopped +
+              #I_F_playContinuedInZone +
+              I_F_savedShotsOnGoal +
+              #I_F_savedUnblockedShotAttempts +
+              I_F_penalityMinutes +
+              I_F_faceOffsWon +
+              I_F_giveaways +
+              I_F_takeaways +
+              I_F_oZoneShiftStarts +
+              I_F_neutralZoneShiftStarts +
+              penaltiesDrawn +
+              timeOnBench,
+            data = forwards
+              )
+```
+```{r, echo=FALSE}
+summary(f_reg)
+```
+
+The final reduced model has an $R^2_f$ of 0.9585, indicating a very accurate fit for forwards.
+
+### Checking Assumptions
+
+We plot a histogram of the residuals to determine if the model's residuals are normally distributed and a scatterplot to ensure there is no pattern.
+
+
+```{r, echo=FALSE}
+ggplot(data = f_reg,aes(x = .resid)) +
+  geom_histogram(aes(y = after_stat(density)), bins=8) +
+  stat_function(fun = dnorm,
+                args = list(mean = mean(f_reg$residuals),
+                            sd = sd(f_reg$residuals)),
+                col = "blue",
+                linewidth = 1.5)
+ggplot(data = f_reg) +
+  geom_point(aes(y = .resid, x = .fitted)) +
+  labs(x = "Fitted Values", y = "Residuals")
+
+```
+
+The histogram indicates that the residuals are roughly normally distributed which is a requirement for our assumptions. The scatterplot shows increasing variation which means that we cannot make extremely accurate inferences using the model. However, the high $R^2$ value indicates that the predictive nature of the model still holds. To verify, we use our model and data from the 2023-24 season to find the predicted point totals for each forward and plotted predcted points against actual points.
+
+### Correlation of Predictors
+
+To do this, we create datasets comperable to the 2022-2023 data from the 2023-2024 data. We then plot the predicted points using our model on the x axis and the actual points scored by each player on the y-axis. We also include a line of best fit to indicate how far a player deviates from expected. Players above the line of best fit are overperformers compared to the model and players below the line are underperformers compared to the model.
+```{r, include=FALSE}
+skaters2024 <- read_csv("skaters2024.csv")
+forwards2024 <- skaters2024 %>% filter(situation == "all", position != "D")
+dmen2024 <- skaters2024 %>% filter(situation == "all", position == "D")
+pp2024 <- skaters2024 %>% filter(situation=="5on4")
+forwards2024$predicted_points <-predict(f_reg, forwards2024)
+```
+```{r, echo=FALSE}
+fitf <- lm(I_F_points ~ predicted_points, data = forwards2024)
+forwards2024$predicted_values <- predict(fitf)
+plotf <- plot_ly(data = forwards2024, x = ~predicted_points, y = ~I_F_points, text = ~name, mode = "markers")
+plotf <- plotf %>% layout(
+  title = "Actual Points vs. Predicted Points for Forwards in 2024",
+  xaxis = list(title = "Predicted Points"),
+  yaxis = list(title = "Actual Points")
+)
+plotf <- plotf %>% add_markers(name = "Players")
+plotf <- plotf %>% add_lines(x = forwards2024$predicted_points, y = forwards2024$predicted_values,
+                           line = list(color = "red"), name = "Line of Best Fit")
+plotf
+```
+
+The correlation between predicted points and actual points for forwards is:
+
+```{r, echo=FALSE}
+f_cor <- cor(forwards2024$I_F_points,forwards2024$predicted_points)
+f_cor
+
+```
+
+The high correlation between the variables as well as the high $R^2$ value for the model is evidence that the predictive nature of the model is intact regardless of the variation in the residuals.
+
+### ANOVA Test
+
+We then used a one-way ANOVA test to make sure that the final model with fewer variables is indeed better than the model with many unnecessary variables.
+
+```{r, echo=FALSE}
+anova(f_reg_all, f_reg)
+```
+
+The large p-value indicates that the model with fewer variables is better than the first model with many variables.
+
+## Defensemen
+### Multiple Regression
+
+As with forwards, we hand select statistics that we felt contributed to point production for defensemen. The variables are available in the code below.
+
+```{r}
+d_reg_all <- lm(I_F_points ~ I_F_shotsOnGoal +
+              I_F_missedShots +
+              I_F_blockedShotAttempts +
+              I_F_rebounds +
+              I_F_freeze +
+              I_F_playStopped +
+              I_F_playContinuedInZone +
+              I_F_savedShotsOnGoal +
+              I_F_savedUnblockedShotAttempts +
+              I_F_penalityMinutes +
+              I_F_hits +
+              shotsBlockedByPlayer +
+              I_F_giveaways +
+              I_F_takeaways +
+              I_F_oZoneShiftStarts +
+              I_F_neutralZoneShiftStarts +
+              penaltiesDrawn +
+              timeOnBench,
+            data = d_men
+              )
+```
+```{r, include=FALSE}
+summary(d_reg_all)
+```
+
+We use the same process to use backwards elimination to reduce the variables used in the model.
+
+```{r, include=FALSE}
+d_reg <- lm(I_F_points ~ I_F_shotsOnGoal +
+              #I_F_missedShots +
+              I_F_blockedShotAttempts +
+              I_F_rebounds +
+              #I_F_freeze +
+              #I_F_playStopped +
+              #I_F_playContinuedInZone +
+              I_F_savedShotsOnGoal +
+              #I_F_savedUnblockedShotAttempts +
+              #I_F_penalityMinutes +
+              #I_F_hits +
+              #shotsBlockedByPlayer +
+              I_F_giveaways +
+              I_F_takeaways +
+              I_F_oZoneShiftStarts +
+              #I_F_neutralZoneShiftStarts +
+              penaltiesDrawn +
+              timeOnBench,
+            data = d_men
+              )
+```
+```{r, echo=FALSE}
+summary(d_reg)
+```
+
+The resultant $R^2_d$ is 0.925 which indicates that about 92.5% of the variation in points scored can be explained by the model.
+
+### Checking Assumptions
+
+We plot the residuals as a histogram to check for normality and on a scatterplot to look for patterns.
+
+```{r, echo=FALSE}
+ggplot(data = d_reg,aes(x = .resid)) +
+  geom_histogram(aes(y = after_stat(density)), bins=8) +
+  stat_function(fun = dnorm,
+                args = list(mean = mean(d_reg$residuals),
+                            sd = sd(d_reg$residuals)),
+                col = "blue",
+                linewidth = 1.5)
+ggplot(data = d_reg) +
+  geom_point(aes(y = .resid, x = .fitted)) +
+  labs(x = "Fitted Values", y = "Residuals")
+
+```
+
+Again, the histogram indicates that the residuals are normal, but the scatterplot shows an increase in variation. To verify the model, just like with the forwards we use our model for defensemen and data from the 2023-24 season to plot predicted goals against actual goals for all defensemen.
+
+### Correlation of Predictors
+
+```{r, echo=FALSE}
+dmen2024$predicted_points <-predict(d_reg, dmen2024)
+fitd <- lm(I_F_points ~ predicted_points, data =dmen2024)
+dmen2024$predicted_values <- predict(fitd)
+plotd <- plot_ly(data = dmen2024, x = ~predicted_points, y = ~I_F_points, text = ~name, mode = "markers")
+plotd <- plotd %>% layout(
+  title = "Actual Points vs. Predicted Point for Defensemen 2024",
+  xaxis = list(title = "Predicted Points"),
+  yaxis = list(title = "Actual Points")
+)
+plotd <- plotd %>% add_markers(name = "Players")
+plotd <- plotd %>% add_lines(x = dmen2024$predicted_points, y = dmen2024$predicted_values,
+                           line = list(color = "red"), name = "Line of Best Fit")
+plotd
+```
+
+For the defensemen, the correlation is:
+
+```{r, echo=FALSE}
+d_cor <- cor(dmen2024$I_F_points,dmen2024$predicted_points)
+d_cor
+```
+
+The high correlation between the variables as well as the high $R^2$ value for the model is evidence that the predictive nature of the model is preserved regardless of the variation in the residuals.
+
+### ANOVA Test
+
+We did a one-way ANOVA test on the final model with less variables and the first model with many variables to make sure that eliminating variables in fact produced a better model.
+
+```{r, echo=FALSE}
+anova(d_reg, d_reg_all)
+```
+
+The high p-value (p=0.1979) leads us to draw the same conclusion as before.
+
+## Powerplay
+### Multiple Regression
+
+As with forwards and defensemen, we hand select statistics that we felt contribute to point production for forwards on the power play. The variables are available in the code below.
+
+
+```{r}
+fpp_reg_all <- lm(I_F_points ~ I_F_shotsOnGoal +
+              I_F_missedShots +
+              I_F_blockedShotAttempts +
+              I_F_rebounds +
+              I_F_freeze +
+              I_F_playStopped +
+              I_F_playContinuedInZone +
+              I_F_savedShotsOnGoal +
+              I_F_savedUnblockedShotAttempts +
+              I_F_penalityMinutes +
+              I_F_faceOffsWon +
+              I_F_giveaways +
+              I_F_takeaways +
+              I_F_oZoneShiftStarts +
+              I_F_neutralZoneShiftStarts +
+              penaltiesDrawn +
+              timeOnBench,
+            data = forwardspp
+              )
+```
+```{r, include=FALSE}
+summary(fpp_reg_all)
+```
+
+We systematicly eliminate variables until we are left with variables that were all within the desired level of significance ($\alpha = 0.05$). The code below shows which variables made the cut.
+
+```{r, include=FALSE}
+fpp_reg <- lm(I_F_points ~ I_F_shotsOnGoal +
+              I_F_missedShots +
+              I_F_blockedShotAttempts +
+              #I_F_rebounds +
+              #I_F_freeze +
+              #I_F_playStopped +
+              #I_F_playContinuedInZone +
+              I_F_savedShotsOnGoal +
+              #I_F_savedUnblockedShotAttempts +
+              #I_F_penalityMinutes +
+              #I_F_faceOffsWon +
+              I_F_giveaways +
+              #I_F_takeaways +
+              I_F_oZoneShiftStarts +
+              I_F_neutralZoneShiftStarts +
+              penaltiesDrawn +
+              timeOnBench,
+            data = forwardspp
+              )
+```
+```{r, echo=FALSE}
+summary(fpp_reg)
+```
+
+The final model had an $R^2_{pp}$ of 0.9179.
+
+### Checking Assumptions
+
+As before, we plot residuals for forwards on the powerplay on a histogram and on a scatterplot.
+
+```{r, echo=FALSE}
+ggplot(data = fpp_reg,aes(x = .resid)) +
+  geom_histogram(aes(y = after_stat(density)), bins=8) +
+  stat_function(fun = dnorm,
+                args = list(mean = mean(fpp_reg$residuals),
+                            sd = sd(fpp_reg$residuals)),
+                col = "blue",
+                linewidth = 1.5)
+ggplot(data = fpp_reg) +
+  geom_point(aes(y = .resid, x = .fitted)) +
+  labs(x = "Fitted Values", y = "Residuals")
+```
+
+Once again, the histogram shows that the residuals are normally distributed, but there is not constant variability in them. Therefore, we use the same method as with forwards and defensemen to plot predicted power play points for forwards against actual power play points for forwards.
+
+### Correlation of Predictors
+
+```{r, echo=FALSE}
+pp2024$predicted_points <-predict(fpp_reg, pp2024)
+fitfpp <- lm(I_F_points ~ predicted_points, data = pp2024)
+pp2024$predicted_values <- predict(fitfpp)
+plotfpp <- plot_ly(data = pp2024, x = ~predicted_points, y = ~I_F_points, text = ~name, mode = "markers")
+plotfpp <- plotfpp %>% layout(
+  title = "Actual Points vs. Predicted Points for Forwards on the Power Play in 2024",
+  xaxis = list(title = "Predicted Points"),
+  yaxis = list(title = "Actual Points")
+)
+plotfpp <- plotfpp %>% add_markers(name="Players")
+plotfpp <- plotfpp %>% add_lines(x = pp2024$predicted_points, y = pp2024$predicted_values,
+                           line = list(color = "red"), name = "Line of Best Fit")
+plotfpp
+```
+
+For forwards on the powerplay, the correlation is:
+
+```{r, echo=FALSE}
+fpp_cor <- cor(pp2024$I_F_points,pp2024$predicted_points)
+fpp_cor
+```
+
+The high correlation between the variables as well as the high $R^2$ value for the model is evidence that the predictive nature of the model is preserved regardless of the variation in the residuals.
+
+### ANOVA Test
+
+To check whether the final model with less variables was actually better than the first model with more variables, we run a one-way ANOVA test on both models.
+
+```{r, echo=FALSE}
+anova(fpp_reg,fpp_reg_all)
+```
+
+The high p-value (p=0.9631) is strong evidence that the model with less variables is better than the model with more variables.
+
+# Conclusion
+
+We create three multiple regression models that predict point totals for forwards, defensemen, and forwards on the powerplay using other individual stats. These models are not only accurate, but are robust to outlying skaters as there was no filtering statements on the 2023-2024 datasets. These models use stats from 2022-2023 to predict points for 2023-2024 and use current stats to calculate current expected point totals. Consequently, in application, these models are weakened by the fact that they are not actually predictive for the future, but rather just indicate how a player is performing compared to where they should be given their productivity in other stat categories. These models essentially use other individual stats to grade point production by a given skater. If a player has more points than the model predicts, then the player is overperforming compared to their other stats. Similarly, players who have fewer points than the model predicts are underperforming compared to their other skaters. Areas for further research would include building models for other special teams situations such as shorthanded situations. Furthermore, further research could focus on each stat individually over time to build regression models in order to predict future years' stat totals and thus predict point totals for players going forward. It could also be interesting to explore which players over or under performed the most and see if there may be other factors which would cause these larger deviations from the model. 
+
+```{python}
+print("HTML compiled")
+```
