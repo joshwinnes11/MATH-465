@@ -1,4 +1,7 @@
 ---
+title: "Penguins In Class Activity"
+author: "Josh Winnes"
+date: "`r Sys.Date()`"
 output:
   html_document: default
   pdf_document: default
