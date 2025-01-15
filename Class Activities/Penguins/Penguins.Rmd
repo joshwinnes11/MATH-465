@@ -72,4 +72,19 @@ ggplot(data=penguins,
   )
 ```
 
+# Third Plot
+
+
+```{r third plot, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data=penguins,
+       mapping = aes(x=bill_length_mm, y=body_mass_g),
+       ) +
+  geom_point(mapping = aes(color=sex, shape=sex)) +
+  geom_smooth(method="lm")+
+  labs(
+    title="Bill Length (mm) vs. Body Mass (g)",
+    subtitle = "Colored by Sex",
+    x = "Bill Length (mm)", y = "Body Mass (g)"
+  )
+```
 
