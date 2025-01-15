@@ -1,0 +1,39 @@
+```{r setup, include=FALSE}
+## Note that this code chunk will not appear in your knitted file because of the option `include=FALSE`
+## First, we load packages we need.If you get an error, make sure you have these installed by running the following code. You only need to install once, but you must load packages every time you start a new session.
+#install.packages("tidyverse")
+#install.packages("palmerpenguins")
+#install.packages('ggthemes')
+library(tidyverse)
+library(palmerpenguins)
+library(ggthemes)
+```
+
+# Looking at the data
+
+Using a markdown like this is a great way to follow along as you read from the [R for Data Science](https://r4ds.hadley.nz) or Tidy Modeling with R books. It allows you to write text (to keep notes) along with your code. Here we are going to load the `palmerpenguins` data into our environment:
+
+```{r load-data}
+data(penguins)
+```
+
+Notice that the `penguins` data set now appears in the Environment tab on the upper right of our screen. We can get a look at the data using the `glimpse` function:
+
+```{r glimpse-data}
+glimpse(penguins)
+```
+
+If you want to inspect a little more closely, click the `penguins` data in your Environment pane on the upper right side of the screen. 
+
+What do all these variables mean? This data is well-documented, so we can find out more using `?penguins`. Try typing that yourself in the console, and see what happens. We'll get more into importing and wrangling data later on.
+
+One more note: the beginning of each code chunk looks like `{r chunk-name}`. The first `r` just indicates that we are using `R` code, but other languages like python are supported as well! The `chunk-name` is important, too, because it tells you where to look if you make errors!
+
+# First Plot
+
+Use this section to follow along with [Chapter 1 of R4DS](https://r4ds.hadley.nz/data-visualize). Make a new chunk to run code from the chapter, and eventually you should make this image:
+
+![](https://r4ds.hadley.nz/data-visualize_files/figure-html/unnamed-chunk-7-1.png)
+
+
+
