@@ -1,3 +1,8 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
 ```{r setup, include=FALSE}
 ## Note that this code chunk will not appear in your knitted file because of the option `include=FALSE`
 ## First, we load packages we need.If you get an error, make sure you have these installed by running the following code. You only need to install once, but you must load packages every time you start a new session.
@@ -33,7 +38,35 @@ One more note: the beginning of each code chunk looks like `{r chunk-name}`. The
 
 Use this section to follow along with [Chapter 1 of R4DS](https://r4ds.hadley.nz/data-visualize). Make a new chunk to run code from the chapter, and eventually you should make this image:
 
-![](https://r4ds.hadley.nz/data-visualize_files/figure-html/unnamed-chunk-7-1.png)
+```{r first plot}
+ggplot(
+  data = penguins,
+  mapping = aes(x = flipper_length_mm, y = body_mass_g)
+) +
+  geom_point(aes(color = species, shape = species)) +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "Body mass and flipper length",
+    subtitle = "Dimensions for Adelie, Chinstrap, and Gentoo Penguins",
+    x = "Flipper length (mm)", y = "Body mass (g)",
+    color = "Species", shape = "Species"
+  ) +
+  scale_color_colorblind()
+```
 
+# Second Plot
+
+```{r second plot}
+ggplot(data=penguins,
+       mapping = aes(x=bill_length_mm, y=body_mass_g),
+       ) +
+  geom_point(mapping = aes(color=sex, shape=sex)) +
+  geom_smooth(method="lm")+
+  labs(
+    title="Bill Length (mm) vs. Body Mass (g)",
+    subtitle = "Colored by Sex",
+    x = "Bill Length (mm)", y = "Body Mass (g)"
+  )
+```
 
 
