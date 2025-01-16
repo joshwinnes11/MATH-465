@@ -1,0 +1,51 @@
+---
+title: "Pre-Class Assignment 2"
+author: "Josh Winnes"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(palmerpenguins)
+library(ggthemes)
+```
+
+# Part 1
+
+### Question A
+
+```{r message=FALSE, warning=FALSE}
+
+ggplot(data=penguins, mapping = aes(x=flipper_length_mm, y=body_mass_g)) + 
+  geom_point(
+    mapping = aes(color=species)
+  ) +
+  geom_smooth(method = 'lm') +
+  labs(
+    x = "Flipper length (mm)",
+    y = "Body mass (g)",
+    title="Body mass and flipper length"
+  ) +
+  scale_color_colorblind()
+
+```
+
+### Question B
+
+From the boxplot in 1.5.1, you can see that the Gentoo species seems to have a higher median body mass. The density plot agrees with this claim.
+
+### Question C
+
+One common coding mistake is to accidentally put the `+` at the beginning of a line instead of after a line, for example:
+
+```{raw}
+ggplot(penguins, aes(x=body_mass_g, y=flipper_length_mm))
++ geom_point()
+```
+
+Another common mistake is to forget to close parentheses and quotation marks. In order to get help with R functions, you can run `?function_name` in the console to get access to the help page.
+
+# Part 2
+
+I don't have any other questions from the reading at the moment.
