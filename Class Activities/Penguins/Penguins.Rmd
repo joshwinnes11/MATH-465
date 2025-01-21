@@ -88,3 +88,57 @@ ggplot(data=penguins,
   )
 ```
 
+# Testing some stuff in class
+
+```{r}
+plot <- ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_density_2d(aes(color = stat(level)), linewidth=1) +
+  geom_point(aes(shape = species), color='red', size=2) +
+  labs(
+    title = '2D Density and Species Distribution by Bill Dimensions'
+  )
+
+plot
+```
+
+
+# Visualizations
+
+### Plot 1
+
+```{r}
+plot <- ggplot(penguins, aes(x=body_mass_g))
+
+plot + 
+  geom_histogram(bins = 30) +
+  labs(
+    title = "Histogram of Body Masses",
+    x = "Body Mass (g)",
+    y = ""
+  )
+```
+
+
+### Plot 2
+
+```{r}
+plot2 <- ggplot(penguins %>% filter(!is.na(sex)), aes(x=flipper_length_mm, y=body_mass_g, color=species))
+
+plot2 +
+  facet_wrap(~sex)+
+  geom_point()+
+  geom_smooth(method="lm")
+```
+
+### Plot 3
+
+
+```{r}
+plot3 <- ggplot(penguins, aes(x=island, y=bill_depth_mm))
+
+plot3 +
+  geom_boxplot(
+    fill = "darkblue",
+    color = "darkred"
+  )
+```
