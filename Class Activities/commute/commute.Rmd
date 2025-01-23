@@ -1,0 +1,84 @@
+---
+title: "Data Import Activity"
+author: "Josh Winnes"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Getting Data
+
+### Exercise 3
+
+```{r data_import message=FALSE, warning=FALSE}
+alone_2023 <- read_csv("https://www2.census.gov/programs-surveys/acs/data/2023/1_year_geographic_comparison_tables/GCT0802.csv", comment="TITLE:")
+transit_2023 <- read_csv("https://www2.census.gov/programs-surveys/acs/data/2023/1_year_geographic_comparison_tables/GCT0804.csv", comment="TITLE:")
+
+glimpse(alone_2023)
+glimpse(transit_2023)
+```
+### Exercise 4 
+
+I'm able to import the data fine, but it looks like the column names are a little messed up. I can tell what they're supposed to be, but it looks like there might be some subtitles that got put in as row 1. I added the `comment = 'TITLE:'` parameter in the `read_csv()` function to get rid of that.
+
+### Exercise 5 
+
+It looks like the data types are `<chr>` for `TBLID`, `GEOID`, `GEONAME`, and `MG_ERROR` while `PROFLN` and `ESTIMATE` are `<dbl>`. The only things that I think could be better would be to change `MG_ERROR` to `<dbl>` by assuming that they are all +/- and just putting the numeric value in.
+
+# Renaming Columns
+
+### Exercises 6 and 7
+
+```{r renaming_columns message=FALSE, warning=FALSE}
+# Exercise 6
+library(janitor)
+
+# Exercise 7
+alone_2023 <- alone_2023 |>
+  clean_names() |>
+  mutate(commute_alone_pct = estimate) |>
+  mutate(commute_alone_mg_error = -1*parse_number(mg_error))
+
+transit_2023 <- transit_2023 |>
+  clean_names() |>
+  mutate(commute_transit_pct = estimate) |>
+  mutate(commute_transit_mg_error = -1*parse_number(mg_error))
+```
+
+# Wrangling and Joining
+
+### Exercise 8
+
+```{r wrangling_and_joining message=FALSE, warning=FALSE}
+alone_2023 <- alone_2023 %>% select(geoid, geoname, commute_alone_pct, commute_alone_mg_error)
+transit_2023 <- transit_2023 %>% select(geoid, geoname, commute_transit_pct, commute_transit_mg_error)
+```
+
+# Past Data
+
+### Exercise 9
+
+```{r past_data message=FALSE, warning=FALSE}
+url_alone_2019 <- "https://www2.census.gov/programs-surveys/acs/summary_file/2019/data/1_year_geographic_comparison_tables/GCT0802.csv"
+url_transit_2019 <- "https://www2.census.gov/programs-surveys/acs/summary_file/2019/data/1_year_geographic_comparison_tables/GCT0804.csv"
+
+alone_2019 <- read_csv(url_alone_2019, comment="TITLE:")
+transit_2019 <- read_csv(url_transit_2019, comment="TITLE:")
+
+alone_2019 |> 
+  clean_names() |>
+  mutate(commute_alone_pct = estimate) |>
+  mutate(commute_alone_mg_error = -1*parse_number(mg_error))
+alone_2019 <- alone_2019 %>% select(geoid, geoname, commute_alone_pct, commute_alone_mg_error)
+
+transit_2019 |>
+  clean_names() |>
+  mutate(commute_transit_pct = estimate) |>
+  mutate(commute_alone_mg_error = -1*parse_number(mg_error))
+transit_2019 <- transit_2019 %>% select(geoid, geoname, commute_transit_pct, commute_transit_mg_error)
+```
+
