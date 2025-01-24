@@ -1,0 +1,27 @@
+---
+title: "Pre Class 4"
+author: "Josh Winnes"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Part 1
+
+## A)
+
+To get rows that contain Juniors only, you would want to use the `filter()` function. To get only the `name` and `age` columns, you would want to use the `select()` function.
+
+## B) - 5.2.1.1
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+view(table1)
+view(table2)
+view(table3)
+```
+
+For Table 1, the columns represent the variables that they say they do (i.e. country represents the country of the observation) while the observations look like they represent the number of cases of something in a given year in a given country as well as what the population was that year.
+
+For Table 2, the columns country and year are the same, but rather than having a column for number of cases and total population, there is a column for type (either case or pop) and another column for the count. Essentially, this table has split each observation into two observations, one for number of cases and one for total population. Each observation then is either a given case count in a given country in a given year or a population count in a given country in a given year.
+
+For Table 3, there are only three columns. The country and year are self explanitory while the rate looks like it is giving the case/population rate. Each observation then is simply the infection rate in a given country in a given year.

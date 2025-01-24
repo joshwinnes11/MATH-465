@@ -232,10 +232,11 @@ presidential |>
   ggplot(aes(x = start, y = id, color = party)) +
   geom_point() +
   geom_segment(aes(xend = end, yend = id)) +
-  scale_color_manual(values = c(Republican = "#E81B23", Democratic = "#00AEF3"))
+  scale_color_manual(name = "Party", values = c(Republican = "#E81B23", Democratic = "#00AEF3"))+
+  scale_x_date(name = "Innauguration Year", date_breaks="4 year", minor_breaks=NULL, date_labels = "'%y")
 ```
 
-I'm not really sure what this question was asking.
+To be totally honest, even after reading the chapter, I'm not really sure what the question means when it says to "combine the variants," so I just cleaned up the x axis and color scale. 
 
 ### Part B
 
@@ -245,7 +246,9 @@ presidential |>
   ggplot(aes(x = start, y = id, color = party)) +
   geom_point() +
   geom_segment(aes(xend = end, yend = id)) +
-  scale_color_manual(values = c(Republican = "#E81B23", Democratic = "#00AEF3"))
+  scale_color_manual(name = "Party", values = c(Republican = "#E81B23", Democratic = "#00AEF3"))+
+  scale_x_date(name = "Innauguration Year", date_breaks="4 year", minor_breaks=NULL, date_labels = "'%y") +
+  scale_y_continuous(name = "", labels = NULL, breaks = 0)
 ```
 
 ### Part C
@@ -255,9 +258,11 @@ presidential |>
   mutate(id = 33 + row_number()) |>
   ggplot(aes(x = start, y = id, color = party)) +
   geom_point() +
-  geom_segment(aes(xend = end, yend = id)) +
-  scale_color_manual(values = c(Republican = "#E81B23", Democratic = "#00AEF3")) +
-  geom_label(aes(label=name), size=3)
+  geom_segment(aes(xend = end, yend = id)) + 
+  geom_label(aes(label=name), size=3) +
+  scale_color_manual(name = "Party", values = c(Republican = "#E81B23", Democratic = "#00AEF3"))+
+  scale_x_date(name = "Innauguration Year", date_breaks="4 year", minor_breaks=NULL, date_labels = "'%y") +
+  scale_y_continuous(name = "", labels = NULL, breaks = 0)
 ```
 
 ### Part D
@@ -267,18 +272,17 @@ presidential |>
   mutate(id = 33 + row_number()) |>
   ggplot(aes(x = start, y = id, color = party)) +
   geom_point() +
-  geom_segment(aes(xend = end, yend = id)) +
-  scale_color_manual(values = c(Republican = "#E81B23", Democratic = "#00AEF3")) +
+  geom_segment(aes(xend = end, yend = id)) + 
   geom_label(aes(label=name), size=3) +
+  scale_color_manual(name = "Party", values = c(Republican = "#E81B23", Democratic = "#00AEF3"))+
+  scale_x_date(name = "Innauguration Year", date_breaks="4 year", minor_breaks=NULL, date_labels = "'%y") +
+  scale_y_continuous(name = "", labels = NULL, breaks = 0) +
   labs(
-    x = "Year",
-    y = "Presidential ID",
-    title = "US Presidential Term Lengths",
-    color = "Party"
+    title = "US Presidential Terms",
   )
 ```
 
 ### Part E
 
-
+Already done in Part A.
 
