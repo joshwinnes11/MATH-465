@@ -1,0 +1,108 @@
+---
+title: "HW 2"
+author: "Josh Winnes"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: readable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(fivethirtyeight)
+```
+
+# Exercise 1
+
+For whatever reason, I couldn't load the `bechdel` dataset by running `data(bechdel)` so I just downloaded the `.csv` file from github directly and loaded it in that way.
+
+```{r message=FALSE, warning=FALSE}
+bechdel <- read_csv('movies.csv')
+
+bechdel90.13 <- bechdel |>
+  clean_names() |>
+  filter(between(bechdel$year, 1990, 2013)) |>
+  mutate(
+    binary = as.factor(binary),
+    domgross_2013 = as.numeric(domgross_2013),
+    intgross_2013 = as.numeric(intgross_2013)
+  )
+```
+
+# Exercise 2
+
+```{r message=FALSE, warning=FALSE}
+bechdel90.13 |>
+  group_by(binary) |>
+  summarize(
+    med_budget = median(budget_2013),
+    med_domgross = median(domgross_2013, na.rm = TRUE),
+    med_intgross = median(intgross_2013, na.rm = TRUE),
+    num_movies = n()
+  )
+```
+
+From the data, we can see that it looks like movies that fail the test have higher budgets and bring in more money. And also that there is just more movies that fail the test than pass it.
+
+# Exercise 3
+
+`dubious` means that it's uncertain whether or not the film passed the test because some contributors on the website were skeptical about it.
+
+```{r message=FALSE, warning=FALSE}
+bechdel90.13|>
+  group_by(clean_test) |>
+  summarize(
+    med_budget = median(budget_2013),
+    med_domgross = median(domgross_2013, na.rm = TRUE),
+    med_intgross = median(intgross_2013, na.rm = TRUE),
+    num_movies = n()
+  ) |>
+  arrange(desc(med_budget))
+```
+
+I notice that when you look at it broken down like this, the majority of movies that failed the test failed because women just don't talk to each other at all. 52% of movies that didn't pass failed because of that. Also, when you look at the median budget, movies where women don't talk to each other had almost 1.5 times more budget space than movies that passed the test.
+
+# Exercise 4
+
+I'm not entirely sure which `budget` and `domgross` the exercise wants me to use. I could calculate the `roi` for each movie individually and then have it as part of the summary (avg_roi or something?) or I can calculate it using `med_budget`/`med_domgross` from the previous summary... the results are pretty different.
+
+```{r message=FALSE, warning=FALSE}
+# When I use the median budget and median domgross
+
+bechdel90.13|>
+  group_by(clean_test) |>
+  summarize(
+    med_budget = median(budget_2013),
+    med_domgross = median(domgross_2013, na.rm = TRUE),
+    med_intgross = median(intgross_2013, na.rm = TRUE),
+    num_movies = n(),
+    roi = round(med_budget/med_domgross, digits=2)
+  ) |>
+  arrange(desc(roi))
+```
+
+```{r message=FALSE, warning=FALSE}
+# When I calculate roi for each movie before grouping them
+
+bechdel90.13|>
+  mutate(
+    roi = round(budget_2013/domgross_2013, digits=2), # Also not sure why this isn't rounding to 2 digits...
+  ) |>
+  group_by(clean_test) |>
+  summarize(
+    med_budget = median(budget_2013),
+    med_domgross = median(domgross_2013, na.rm = TRUE),
+    med_intgross = median(intgross_2013, na.rm = TRUE),
+    num_movies = n(),
+    med_roi = median(roi, na.rm = TRUE)
+  ) |>
+  arrange(desc(med_roi))
+```
+
+# Exercise 5
+

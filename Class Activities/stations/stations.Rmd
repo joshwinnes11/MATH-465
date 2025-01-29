@@ -1,0 +1,98 @@
+---
+title: "Data Wrangling Activity"
+author: "Josh Winnes"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(lubridate)
+```
+
+```{r message=FALSE, warning=FALSE}
+url <- "https://data.cityofchicago.org/api/views/5neh-572f/rows.csv?accessType=DOWNLOAD&bom=true&format=true"
+
+all_stations_raw <- read_csv(url)
+```
+
+```{r message=FALSE, warning=FALSE}
+all_stations_raw <- all_stations_raw|>clean_names()
+
+glimpse(all_stations_raw)
+```
+
+```{r message=FALSE, warning=FALSE}
+all_stations <- all_stations_raw %>%
+  select(station = stationname, date, rides, day_type=daytype) %>%
+  mutate(
+    date = mdy(date),
+    rides = rides / 1000,
+    day_type = recode(
+      as.factor(day_type),
+      "W" = "weekday", "A" = "saturday", "U" = "sunday/holiday"
+    )
+  )
+
+all_stations
+```
+
+```{r message=FALSE, warning=FALSE}
+all_stations %>%
+  select(where(is.character))
+```
+
+```{r message=FALSE, warning=FALSE}
+all_stations %>%
+  mutate(month = month(date)) %>% 
+  glimpse()
+
+all_stations
+```
+
+```{r message = FALSE, warning = FALSE}
+library(skimr)
+
+all_stations |>
+  skim()
+```
+
+```{r message = FALSE, warning = FALSE}
+all_stations |>
+  filter(month(date) == 8 & day(date) == 17) |>
+  arrange(desc(rides))
+```
+
+```{r message = FALSE, warning = FALSE}
+all_stations |>
+  group_by(station) |>
+  summarize(count = n())
+```
+
+```{r message = FALSE, warning=FALSE}
+all_stations |> 
+  filter(year(date) >= 2018) |>
+  mutate(week = isoweek(date), year = year(date)) |>
+  group_by(year, week) |>
+  summarize(avg_rides = mean(rides), first_day = min(date)) |>
+  ggplot(aes(x = first_day, y=avg_rides)) +
+  geom_line(color = "#123598") +
+  geom_smooth(color = "#337142") + 
+  labs(
+    title = "Weekly CTA Ridership",
+    x = "Date",
+    y = "Average Rides"
+  )
+  
+```
+
+```{r message = FALSE, warning=FALSE}
+all_stations |> 
+  filter(year(date) >= 2018) |>
+  mutate(week = isoweek(date), year = year(date)) |>
+  group_by(year, week) |>
+  summarize(rolling_avg_rides = mean(rides))
+
+```
